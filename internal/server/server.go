@@ -216,7 +216,7 @@ func (s *Server) createPromptHandlerForPrompt(p *prompt.Prompt) func(context.Con
 		}
 
 		return &mcp.GetPromptResult{
-			Description: "A complex prompt with arguments",
+			Description: p.Description,
 			Messages:    promptMessages,
 		}, nil
 	}
