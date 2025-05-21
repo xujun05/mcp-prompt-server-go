@@ -1,0 +1,10 @@
+name: test_prompt
+description: A simple test prompt to verify the system works
+arguments: []
+messages:
+  - role: user
+    content:
+      type: text
+      text: |
+        This is a test prompt from the Go implementation of MCP Prompt Server.
+        If you can see this message, it means the system is working correctly!
