@@ -1,8 +1,35 @@
-# MCP Prompt Server (Go)
+# MCP 提示词服务器 (Go版本)
 
-Go语言实现的MCP提示词服务器，基于[mark3labs/mcp-go](https://github.com/mark3labs/mcp-go)。
+这是一个使用Go语言实现的MCP提示词服务器，基于[mark3labs/mcp-go](https://github.com/mark3labs/mcp-go)库。
 
-Inspired by [joeseesun/mcp-prompt-server](https://github.com/joeseesun/mcp-prompt-server), and [gdli6177/mcp-prompt-server](https://github.com/gdli6177/mcp-prompt-server).
+不只是受 [joeseesun/mcp-prompt-server](https://github.com/joeseesun/mcp-prompt-server), and [gdli6177/mcp-prompt-server](https://github.com/gdli6177/mcp-prompt-server) 启发，而且初始的提示词都是从[joeseesun/mcp-prompt-server](https://github.com/joeseesun/mcp-prompt-server)项目中复制过来的。
+
+
+## 你是否遇到过这些痛点？
+
+是否曾经有一堆提示词但记不住什么时候该用哪个？
+
+是否厌倦了每次需要提示词时都要复制粘贴？
+
+有些人将提示词存储在AI编程工具的规则中，这解决了部分问题。
+
+但如果我们能将常用提示词转化为MCP工具呢？
+
+通过将提示词模板设计为工具，我们可以通过自然语言对话调用各种提示词。
+
+## 这个MCP的强大之处
+
+不再需要复制粘贴冗长的提示词。
+
+只需使用自然语言对话即可自动：
+- 生成可视化网页
+- 设计PRD
+- 创建吸引人的标题
+- 还有更多...
+
+AI会自动找到并使用合适的提示词。
+
+适用于任何支持MCP的工具，如Raycast、Cursor、Windsurf、Cherrystudio等。
 
 ## 主要特性
 
@@ -122,6 +149,17 @@ mcp-prompt-server-go/
 
 - `reload_prompts`: 热重载所有提示词模板
 - `get_prompt_names`: 列出所有可用的提示词名称
+
+## 常见问题
+
+- **提示词不工作？**  
+  检查YAML格式，确保name字段唯一，并重新加载或重启服务。
+- **参数不工作？**  
+  确保`arguments`字段正确，并且参数传递正确。
+
+## 贡献和反馈
+
+- 欢迎贡献新的提示词、建议和错误报告！
 
 ## 许可证
 
