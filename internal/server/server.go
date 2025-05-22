@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/kataras/golog"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"gopkg.in/yaml.v3"
 )
 
 // Server 表示MCP提示词服务器
@@ -67,7 +70,7 @@ func (s *Server) Stop() {
 
 // loadPrompts 加载所有提示词
 func (s *Server) loadPrompts() error {
-	prompts, err := prompt.LoadFromDirectory(s.promptsDir)
+	prompts, err := prompt.LoadFromSubdirectories(s.promptsDir)
 	if err != nil {
 		return fmt.Errorf("failed to load prompts: %w", err)
 	}
@@ -239,6 +242,107 @@ func (s *Server) registerManagementTools() {
 					mcp.TextContent{
 						Type: "text",
 						Text: fmt.Sprintf("Successfully reloaded %d prompts", len(s.prompts)),
+					},
+				},
+			}, nil
+		},
+	)
+
+	// 注册add_prompt工具
+	s.mcpServer.AddTool(
+		mcp.NewTool("add_prompt",
+			mcp.WithDescription("Adds a new prompt to the server. Requires category, filename, and YAML content for the prompt. Reloads prompts on success."),
+			mcp.WithInputSchema(mcp.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]any{
+					"category": map[string]any{
+						"type":        "string",
+						"description": "The category (subdirectory) for the new prompt.",
+					},
+					"filename": map[string]any{
+						"type":        "string",
+						"description": "The filename for the new prompt (e.g., my_new_prompt.yaml).",
+					},
+					"yaml_content": map[string]any{
+						"type":        "string",
+						"description": "The YAML content of the new prompt.",
+					},
+				},
+				Required: []string{"category", "filename", "yaml_content"},
+			}),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			args := request.GetArguments()
+			category, okCat := args["category"].(string)
+			filename, okFile := args["filename"].(string)
+			yamlContent, okYaml := args["yaml_content"].(string)
+
+			if !okCat || !okFile || !okYaml || category == "" || filename == "" || yamlContent == "" {
+				return nil, fmt.Errorf("missing or invalid arguments: category, filename, and yaml_content are required and cannot be empty")
+			}
+
+			if !strings.HasSuffix(filename, ".yaml") && !strings.HasSuffix(filename, ".yml") {
+				return nil, fmt.Errorf("filename must end with .yaml or .yml")
+			}
+
+			var p prompt.Prompt
+			if err := yaml.Unmarshal([]byte(yamlContent), &p); err != nil {
+				return nil, fmt.Errorf("invalid YAML content: %w", err)
+			}
+
+			expectedName := strings.TrimSuffix(filename, filepath.Ext(filename))
+			if p.Name == "" {
+				return nil, fmt.Errorf("prompt name is missing in YAML content")
+			}
+			if p.Name != expectedName {
+				return nil, fmt.Errorf("prompt name in YAML ('%s') does not match filename ('%s')", p.Name, expectedName)
+			}
+
+			promptDir := filepath.Join(s.promptsDir, category)
+			if err := os.MkdirAll(promptDir, 0755); err != nil {
+				return nil, fmt.Errorf("failed to create category directory '%s': %w", category, err)
+			}
+
+			fullPath := filepath.Join(promptDir, filename)
+			if err := os.WriteFile(fullPath, []byte(yamlContent), 0644); err != nil {
+				return nil, fmt.Errorf("failed to write prompt file to %s: %w", fullPath, err)
+			}
+
+			if err := s.loadPrompts(); err != nil {
+				// Attempt to remove the file if reload fails to maintain consistency
+				if removeErr := os.Remove(fullPath); removeErr != nil {
+					golog.Errorf("failed to remove partially added prompt file %s after reload error: %v", fullPath, removeErr)
+					return nil, fmt.Errorf("prompt file saved to %s, but failed to reload prompts (%v) and also failed to cleanup partially added file (%v)", fullPath, err, removeErr)
+				}
+				return nil, fmt.Errorf("prompt file saved to %s, but failed to reload prompts: %w. The new file has been removed to attempt to maintain consistency", fullPath, err)
+			}
+
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					mcp.TextContent{
+						Type: "text",
+						Text: fmt.Sprintf("Prompt %s/%s added and reloaded successfully.", category, filename),
+					},
+				},
+			}, nil
+		},
+	)
+
+	// 注册get_prompt_generate_rule工具
+	s.mcpServer.AddTool(
+		mcp.NewTool("get_prompt_generate_rule",
+			mcp.WithDescription("Returns the content of generate_rule.txt which defines the YAML structure for prompts."),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			content, err := os.ReadFile("generate_rule.txt")
+			if err != nil {
+				return nil, fmt.Errorf("failed to read generate_rule.txt: %w", err)
+			}
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					mcp.TextContent{
+						Type: "text",
+						Text: string(content),
 					},
 				},
 			}, nil
