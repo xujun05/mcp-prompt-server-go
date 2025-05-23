@@ -249,31 +249,30 @@ func (s *Server) registerManagementTools() {
 	)
 
 	// 注册add_prompt工具
-	s.mcpServer.AddTool(
-		mcp.NewTool("add_prompt",
-			mcp.WithDescription("Adds a new prompt to the server. Requires category, filename, and YAML content for the prompt. Reloads prompts on success."),
-			mcp.WithInputSchema(mcp.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]any{
-					"category": map[string]any{
-						"type":        "string",
-						"description": "The category (subdirectory) for the new prompt.",
-					},
-					"filename": map[string]any{
-						"type":        "string",
-						"description": "The filename for the new prompt (e.g., my_new_prompt.yaml).",
-					},
-					"yaml_content": map[string]any{
-						"type":        "string",
-						"description": "The YAML content of the new prompt.",
-					},
-				},
-				Required: []string{"category", "filename", "yaml_content"},
-			}),
-		),
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			args := request.GetArguments()
-			category, okCat := args["category"].(string)
+	addPromptTool := mcp.NewTool("add_prompt",
+		mcp.WithDescription("Adds a new prompt to the server. Requires category, filename, and YAML content for the prompt. Reloads prompts on success."),
+	)
+	addPromptTool.InputSchema = mcp.ToolInputSchema{
+		Type: "object",
+		Properties: map[string]any{
+			"category": map[string]any{
+				"type":        "string",
+				"description": "The category (subdirectory) for the new prompt.",
+			},
+			"filename": map[string]any{
+				"type":        "string",
+				"description": "The filename for the new prompt (e.g., my_new_prompt.yaml).",
+			},
+			"yaml_content": map[string]any{
+				"type":        "string",
+				"description": "The YAML content of the new prompt.",
+			},
+		},
+		Required: []string{"category", "filename", "yaml_content"},
+	}
+	s.mcpServer.AddTool(addPromptTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := request.GetArguments()
+		category, okCat := args["category"].(string)
 			filename, okFile := args["filename"].(string)
 			yamlContent, okYaml := args["yaml_content"].(string)
 
