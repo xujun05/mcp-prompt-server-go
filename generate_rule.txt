@@ -1,0 +1,61 @@
+Prompt YAML Structure Rules:
+
+A prompt file is a YAML document defining a reusable template for interacting with an AI model.
+
+Top-level fields:
+- name: string (Required)
+  Description: A unique identifier for the prompt. Used for referencing and loading the prompt.
+  Example: gen_html_web_page
+
+- description: string (Optional)
+  Description: A human-readable summary of what the prompt does or is used for.
+  Example: Generates a complete HTML webpage based on a user description.
+
+- arguments: array (Optional)
+  Description: A list of arguments that can be used to customize the prompt template.
+  Each item in the array is an object with the following fields:
+  - name: string (Required)
+    Description: The name of the argument, used as a placeholder in message content (e.g., {{argument_name}}).
+    Example: user_topic
+  - description: string (Optional)
+    Description: A human-readable description of what this argument is for.
+    Example: The main topic or subject provided by the user.
+  - required: boolean (Optional, defaults to false)
+    Description: Specifies if this argument must be provided when using the prompt.
+    Example: true
+
+- messages: array (Required)
+  Description: A sequence of message objects that define the conversation structure or the input to the AI.
+  Each item in the array is an object with the following fields:
+  - role: string (Required)
+    Description: The role of the message sender. Common values are "user", "assistant", or "system".
+    Example: user
+  - content: object (Required)
+    Description: The content of the message.
+    It must contain a 'type' field and a corresponding value field.
+    - type: string (Required)
+      Description: Specifies the type of the content. Currently, "text" is the primary supported type for message text. Other types like "image" or "image_url" might be used, but "text" is standard for textual content.
+      Example: text
+    - text: string (Required if type is "text")
+      Description: The actual textual content of the message. Can contain placeholders for arguments (e.g., {{argument_name}}).
+      Example: "Generate an HTML page about {{user_topic}}."
+    # For image content (if supported directly in messages in the future, though current server code seems to handle images by specific content struct fields rather than a generic 'type: image' in prompt files):
+    # - type: string (e.g., "image/jpeg", "image/png")
+    # - data: string (e.g., base64 encoded image data)
+
+Example of a minimal prompt:
+----------------------------
+name: greet_user
+messages:
+  - role: user
+    content:
+      type: text
+      text: "Hello, my name is {{user_name}}."
+  - role: assistant
+    content:
+      type: text
+      text: "Hi {{user_name}}! How can I help you today?"
+----------------------------
+
+Placeholders:
+- Arguments defined in the 'arguments' section can be inserted into the 'text' field of messages using double curly braces, e.g., {{argument_name}}.

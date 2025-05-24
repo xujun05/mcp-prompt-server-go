@@ -70,6 +70,7 @@ func LoadFromFile(path string) (*Prompt, error) {
 
 // LoadFromSubdirectories 递归地从目录和子目录加载提示词
 func LoadFromSubdirectories(rootDir string) ([]*Prompt, error) {
+	golog.Infof("Starting to load prompts from subdirectories in %s", rootDir)
 	var allPrompts []*Prompt
 
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
@@ -103,5 +104,6 @@ func LoadFromSubdirectories(rootDir string) ([]*Prompt, error) {
 		return nil, fmt.Errorf("error walking directories: %w", err)
 	}
 
+	golog.Infof("Finished loading prompts. Found %d prompts in %s and its subdirectories.", len(allPrompts), rootDir)
 	return allPrompts, nil
 }
